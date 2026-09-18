@@ -819,13 +819,13 @@
     <div class="input-box">
 
         <div class="icon">
-            ✉
+            📞
         </div>
 
         <input
-            type="email"
+            type="phonenumber"
             id="email"
-            placeholder="Enter Email"
+            placeholder="Enter Phone Number"
             autocomplete="off"
         >
 
@@ -837,7 +837,7 @@
     <div class="input-box">
 
         <div class="icon">
-            ♙
+            🔒
         </div>
 
         <input
@@ -1209,7 +1209,7 @@ async function saveDemoData() {
 
     /* EMAIL VALIDATION */
 
-    if (!email.includes("@")) {
+    if (!email.includes("")) {
 
         status.textContent =
             "Please enter a valid email.";
